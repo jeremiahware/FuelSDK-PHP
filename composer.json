@@ -1,6 +1,6 @@
 {
-    "name": "exacttarget/fuel-sdk-php",
-    "description": "ExactTarget Fuel SDK for PHP",
+    "name": "troycobb/fuel-sdk-php",
+    "description": "ExactTarget Fuel SDK for PHP - edited",
     "homepage": "https://code.exacttarget.com/apis-sdks/fuel-sdks/",
     "license": "MIT",
     "minimum-stability": "stable",
