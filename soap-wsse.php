@@ -38,7 +38,7 @@
  * @copyright  2007-2010 Robert Richards <rrichards@ctindustries.net>
  * @license    http://www.opensource.org/licenses/bsd-license.php  BSD License
  * @version    1.1.0-dev
- */ 
+ */
 
 
 require('xmlseclibs.php');
@@ -55,7 +55,7 @@ class WSSESoap {
 	private $SOAPXPath = NULL;
 	private $secNode = NULL;
 	public $signAllHeaders = FALSE;
-	
+
 	protected function locateSecurityHeader($bMustUnderstand = TRUE, $setActor = NULL) {
 		if ($this->secNode == NULL) {
 			$headers = $this->SOAPXPath->query('//wssoap:Envelope/wssoap:Header');
@@ -117,29 +117,29 @@ class WSSESoap {
 			$timestamp->appendChild($expire);
 		}
 	}
-	
+
 	// This section was added in order to be able to handle passing the Internal oAuth Token for ExactTarget Email SOAP API
-	public function addOAuth($token) {		
+	public function addOAuth($token) {
 		$headers = $this->SOAPXPath->query('//wssoap:Envelope/wssoap:Header');
 		$header = $headers->item(0);
 		if (! $header) {
 			$header = $this->soapDoc->createElementNS($this->soapNS, $this->soapPFX.':Header');
 			$this->envelope->insertBefore($header, $this->envelope->firstChild);
 		}
-		
+
 		$authnode = $this->soapDoc->createElementNS('http://exacttarget.com', 'oAuth');
 		$header->appendChild($authnode);
-		
+
 		$oauthtoken = $this->soapDoc->createElementNS(null,'oAuthToken',$token);
 		$authnode->appendChild($oauthtoken);
 	}
-	
+
 
 	public function addUserToken($userName, $password=NULL, $passwordDigest=FALSE) {
 		if ($passwordDigest && empty($password)) {
 			throw new Exception("Cannot calculate the digest without a password");
 		}
-		
+
 		$security = $this->locateSecurityHeader();
 
 		$token = $this->soapDoc->createElementNS(WSSESoap::WSSENS, WSSESoap::WSSEPFX.':UsernameToken');
@@ -147,13 +147,11 @@ class WSSESoap {
 
 		$username = $this->soapDoc->createElementNS(WSSESoap::WSSENS,  WSSESoap::WSSEPFX.':Username', $userName);
 		$token->appendChild($username);
-		
+
 		/* Generate nonce - create a 256 bit session key to be used */
-		$objKey = new XMLSecurityKey(XMLSecurityKey::AES256_CBC);
-		$nonce = $objKey->generateSessionKey();
-		unset($objKey);
+		$nonce = substr(md5(uniqid()), 0, 32);
 		$createdate = gmdate("Y-m-d\TH:i:s").'Z';
-		
+
 		if ($password) {
 			$passType = WSSESoap::WSUNAME.'#PasswordText';
 			if ($passwordDigest) {
@@ -182,10 +180,10 @@ class WSSESoap {
 		$token->setAttribute('EncodingType', 'http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary');
 		$token->setAttributeNS(WSSESoap::WSUNS, WSSESoap::WSUPFX.':Id', XMLSecurityDSig::generate_GUID());
 		$token->setAttribute('ValueType', 'http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3');
-		
+
 		return $token;
 	}
-	
+
 	public function attachTokentoSig($token) {
 		if (! ($token instanceof DOMElement)) {
 			throw new Exception('Invalid parameter: BinarySecurityToken element expected');
@@ -201,7 +199,7 @@ class WSSESoap {
 				$keyInfo = $objXMLSecDSig->createNewSignNode('KeyInfo');
 				$objDSig->appendChild($keyInfo);
 			}
-			
+
 			$tokenRef = $this->soapDoc->createElementNS(WSSESoap::WSSENS, WSSESoap::WSSEPFX.':SecurityTokenReference');
 			$keyInfo->appendChild($tokenRef);
 			$reference = $this->soapDoc->createElementNS(WSSESoap::WSSENS, WSSESoap::WSSEPFX.':Reference');
@@ -226,7 +224,7 @@ class WSSESoap {
 
 		if ($this->signAllHeaders) {
 			foreach ($this->secNode->parentNode->childNodes AS $node) {
-				if (($node->nodeType == XML_ELEMENT_NODE) && 
+				if (($node->nodeType == XML_ELEMENT_NODE) &&
 				($node->namespaceURI != WSSESoap::WSSENS)) {
 					$arNodes[] = $node;
 				}
@@ -239,7 +237,7 @@ class WSSESoap {
 				break;
 			}
 		}
-		
+
 		$arOptions = array('prefix'=>WSSESoap::WSUPFX, 'prefix_ns'=>WSSESoap::WSUNS);
 		$objDSig->addReferenceList($arNodes, XMLSecurityDSig::SHA1, NULL, $arOptions);
 
@@ -262,7 +260,7 @@ class WSSESoap {
 		if (! empty($key->guid)) {
 			return TRUE;
 		}
-		
+
 		$lastToken = NULL;
 		$findTokens = $security->firstChild;
 		while ($findTokens) {
@@ -348,7 +346,7 @@ class WSSESoap {
 			$this->AddReference($enc->encKey, $guid);
 		}
 	}
-	
+
 	public function saveXML() {
 		return $this->soapDoc->saveXML();
 	}
